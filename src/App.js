@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Web3 from "web3";
-import "./App.css"; // Import a CSS file for styling
+import "./App.css"; // Stil dosyasını içe aktar
 
 function App() {
   const [userAddress, setUserAddress] = useState("");
@@ -16,18 +16,109 @@ function App() {
   const [newProjectName, setNewProjectName] = useState("");
   const [newTeamWallets, setNewTeamWallets] = useState("");
 
-  // Fetch Project Details states
-  const [projectIdToFetch, setProjectIdToFetch] = useState("");
-  const [projectDetails, setProjectDetails] = useState(null);
-
   const contractAddress = "0xe542F0C8CC3021C33BD6497E86643a03Bd85B7aD";
   const contractAbi = [
-    // ABI here (same as before)
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": false, "internalType": "string", "name": "projectName", "type": "string"}],
+      "name": "ProjectAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": false, "internalType": "string", "name": "projectName", "type": "string"}],
+      "name": "ProjectUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": false, "internalType": "uint8", "name": "projectID", "type": "uint8"}],
+      "name": "Vote",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {"internalType": "string", "name": "_projectName", "type": "string"},
+        {"internalType": "address[]", "name": "_teamsWallets", "type": "address[]"}
+      ],
+      "name": "addProject",
+      "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "address", "name": "_wallet", "type": "address"}],
+      "name": "getIsVoted",
+      "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "uint8", "name": "_projectID", "type": "uint8"}],
+      "name": "getProjectDetail",
+      "outputs": [
+        {
+          "components": [
+            {"internalType": "uint8", "name": "id", "type": "uint8"},
+            {"internalType": "string", "name": "projectName", "type": "string"},
+            {"internalType": "address[]", "name": "teamWallets", "type": "address[]"},
+            {"internalType": "uint8", "name": "voteCount", "type": "uint8"}
+          ],
+          "internalType": "struct KapsulVoting.Project",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "string", "name": "_projectName", "type": "string"}],
+      "name": "getProjectIDByName",
+      "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "address", "name": "_wallet", "type": "address"}],
+      "name": "getWalletGroup",
+      "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {"internalType": "address[]", "name": "_teamsWallets", "type": "address[]"},
+        {"internalType": "uint8", "name": "_groupNumber", "type": "uint8"}
+      ],
+      "name": "identifyWallets",
+      "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {"internalType": "uint8", "name": "_id", "type": "uint8"},
+        {"internalType": "string", "name": "_newProjectName", "type": "string"},
+        {"internalType": "address[]", "name": "_newTeamWallets", "type": "address[]"}
+      ],
+      "name": "updateProject",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "uint8", "name": "_projectID", "type": "uint8"}],
+      "name": "vote",
+      "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
   ];
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert("MetaMask not found!");
+      alert("MetaMask bulunamadı!");
       return;
     }
 
@@ -37,39 +128,23 @@ function App() {
         method: 'eth_requestAccounts'
       });
 
-      const contractInstance = new web3Instance.eth.Contract(
-        contractAbi,
-        contractAddress
-      );
+      const contractInstance = new web3Instance.eth.Contract(contractAbi, contractAddress);
+      console.log("Kontrat Örneği:", contractInstance); // Debugging
 
       setUserAddress(accounts[0]);
       setWeb3(web3Instance);
       setContract(contractInstance);
 
-      console.log("Wallet connected:", accounts[0]);
+      console.log("Cüzdan bağlandı:", accounts[0]);
     } catch (error) {
-      console.error("Error connecting wallet:", error);
-    }
-  };
-
-  const getDetails = async () => {
-    if (!contract || !userAddress) return;
-
-    try {
-      const group = await contract.methods.getWalletGroup(userAddress).call();
-      const hasVoted = await contract.methods.getIsVoted(userAddress).call();
-      console.log("Wallet Group:", group);
-      console.log("Has Voted:", hasVoted);
-      alert(`Wallet Group: ${group}\nHas Voted: ${hasVoted}`);
-    } catch (error) {
-      console.error("Error getting details:", error);
+      console.error("Cüzdan bağlanırken hata:", error);
     }
   };
 
   const addProject = async () => {
     if (!contract || !userAddress) return;
     if (!projectName || !teamWallets) {
-      alert("Please fill in both project name and team wallets!");
+      alert("Lütfen proje adı ve takım cüzdanlarını doldurun!");
       return;
     }
 
@@ -79,22 +154,22 @@ function App() {
       const tx = await contract.methods.addProject(projectName, walletArray)
         .send({ from: userAddress });
 
-      console.log("Transaction Sent:", tx);
-      alert("Project added successfully!");
+      console.log("İşlem Gönderildi:", tx);
+      alert("Proje başarıyla eklendi!");
 
-      // Clear form
+      // Formu temizle
       setProjectName("");
       setTeamWallets("");
     } catch (error) {
-      console.error("Error adding project:", error);
-      alert("Error adding project: " + error.message);
+      console.error("Proje eklenirken hata:", error);
+      alert("Proje eklenirken hata: " + error.message);
     }
   };
 
   const updateProject = async () => {
     if (!contract || !userAddress) return;
     if (!updateProjectId || !newProjectName || !newTeamWallets) {
-      alert("Please fill in all fields to update the project!");
+      alert("Lütfen tüm alanları doldurun!");
       return;
     }
 
@@ -104,16 +179,16 @@ function App() {
       const tx = await contract.methods.updateProject(parseInt(updateProjectId), newProjectName, walletArray)
         .send({ from: userAddress });
 
-      console.log("Transaction Sent:", tx);
-      alert("Project updated successfully!");
+      console.log("İşlem Gönderildi:", tx);
+      alert("Proje başarıyla güncellendi!");
 
-      // Clear form
+      // Formu temizle
       setUpdateProjectId("");
       setNewProjectName("");
       setNewTeamWallets("");
     } catch (error) {
-      console.error("Error updating project:", error);
-      alert("Error updating project: " + error.message);
+      console.error("Proje güncellenirken hata:", error);
+      alert("Proje güncellenirken hata: " + error.message);
     }
   };
 
@@ -121,114 +196,79 @@ function App() {
     if (!contract || !userAddress) return;
 
     try {
-      const projectId = prompt("Enter project ID to vote:");
+      const projectId = prompt("Oy vermek için proje ismini girin:");
       if (!projectId) return;
 
       const tx = await contract.methods.vote(parseInt(projectId))
         .send({ from: userAddress });
 
-      console.log("Transaction Sent:", tx);
-      alert("Vote cast successfully!");
+      console.log("İşlem Gönderildi:", tx);
+      alert("Oyunuz başarıyla kaydedildi!");
     } catch (error) {
-      console.error("Error voting:", error);
-    }
-  };
-
-  const fetchProjectDetails = async () => {
-    if (!contract || !projectIdToFetch) return;
-
-    try {
-      const details = await contract.methods.getProjectDetail(parseInt(projectIdToFetch)).call();
-      setProjectDetails(details);
-      console.log("Project Details:", details);
-    } catch (error) {
-      console.error("Error fetching project details:", error);
+      console.error("Oy verirken hata:", error);
     }
   };
 
   return (
     <div className="app">
       <header className="header">
-        <h1>Kapsül Teknoloji Voting System</h1>
+        <h1>Kapsül Teknoloji Oylama Sistemi</h1>
         <button className="connect-wallet-button" onClick={connectWallet}>
-          {userAddress ? `Connected: ${userAddress.slice(0, 6)}...` : "Connect Wallet"}
+          {userAddress ? `Bağlandı: ${userAddress.slice(0, 6)}...` : "Cüzdanı Bağla"}
         </button>
       </header>
 
       <main className="main">
-        {/* Add Project Section */}
+        {/* Proje Ekleme Bölümü */}
         <section className="section">
-          <h2>Add Project</h2>
+          <h2>Proje Ekle</h2>
           <div className="form">
             <input
               type="text"
-              placeholder="Project Name"
+              placeholder="Proje Adı"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
             />
             <input
               type="text"
-              placeholder="Team Wallets (comma-separated)"
+              placeholder="Takım Cüzdanları (virgülle ayırın)"
               value={teamWallets}
               onChange={(e) => setTeamWallets(e.target.value)}
             />
-            <button onClick={addProject}>Add Project</button>
+            <button onClick={addProject}>Proje Ekle</button>
           </div>
         </section>
 
-        {/* Update Project Section */}
+        {/* Proje Güncelleme Bölümü */}
         <section className="section">
-          <h2>Update Project</h2>
+          <h2>Proje Güncelle</h2>
           <div className="form">
             <input
               type="text"
-              placeholder="Project ID to Update"
+              placeholder="Güncellenecek Proje ID"
               value={updateProjectId}
               onChange={(e) => setUpdateProjectId(e.target.value)}
             />
             <input
               type="text"
-              placeholder="New Project Name"
+              placeholder="Yeni Proje Adı"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
             />
             <input
               type="text"
-              placeholder="New Team Wallets (comma-separated)"
+              placeholder="Yeni Takım Cüzdanları (virgülle ayırın)"
               value={newTeamWallets}
               onChange={(e) => setNewTeamWallets(e.target.value)}
             />
-            <button onClick={updateProject}>Update Project</button>
+            <button onClick={updateProject}>Proje Güncelle</button>
           </div>
         </section>
 
-        {/* Vote Section */}
+        {/* Oy Verme Bölümü */}
         <section className="section">
-          <h2>Vote</h2>
-          <button onClick={vote}>Vote for a Project</button>
-        </section>
-
-        {/* Fetch Project Details Section */}
-        <section className="section">
-          <h2>Fetch Project Details</h2>
-          <div className="form">
-            <input
-              type="text"
-              placeholder="Project ID to Fetch"
-              value={projectIdToFetch}
-              onChange={(e) => setProjectIdToFetch(e.target.value)}
-            />
-            <button onClick={fetchProjectDetails}>Fetch Details</button>
-          </div>
-          {projectDetails && (
-            <div className="project-details">
-              <h3>Project Details</h3>
-              <p><strong>ID:</strong> {projectDetails.id}</p>
-              <p><strong>Name:</strong> {projectDetails.projectName}</p>
-              <p><strong>Vote Count:</strong> {projectDetails.voteCount}</p>
-              <p><strong>Team Wallets:</strong> {projectDetails.teamWallets.join(", ")}</p>
-            </div>
-          )}
+          <h2>Oy Ver</h2>
+          <button onClick={vote}>Proje için Oy Ver</button>
         </section>
       </main>
     </div>
